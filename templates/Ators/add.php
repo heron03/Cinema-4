@@ -1,29 +1,23 @@
 <?php
-/**
- * @var \App\View\AppView $this
- * @var \App\Model\Entity\Ator $ator
- */
-?>
-<div class="row">
-    <aside class="column">
-        <div class="side-nav">
-            <h4 class="heading"><?= __('Actions') ?></h4>
-            <?= $this->Html->link(__('List Ators'), ['action' => 'index'], ['class' => 'side-nav-item']) ?>
-        </div>
-    </aside>
-    <div class="column-responsive column-80">
-        <div class="ators form content">
-            <?= $this->Form->create($ator) ?>
-            <fieldset>
-                <legend><?= __('Add Ator') ?></legend>
-                <?php
-                    echo $this->Form->control('nome');
-                    echo $this->Form->control('nascimento', ['empty' => true]);
-                    echo $this->Form->control('filmes._ids', ['options' => $filmes]);
-                ?>
-            </fieldset>
-            <?= $this->Form->button(__('Submit')) ?>
-            <?= $this->Form->end() ?>
-        </div>
-    </div>
-</div>
+$this->extend('/Common/form');
+
+$this->assign('title', 'Novo Ator');
+
+$formFields = $this->element('formCreate');
+$formFields .= $this->Html->div('form-row',
+    $this->Form->input('Ator.nome', array(
+        'div' => array('class' => 'form-group col-md-6'),
+    )) .
+    $this->Form->input('Ator.nascimento', array(
+        'div' => array('class' => 'form-group col-md-6'),
+    ))
+);
+$formFields .= $this->Form->input('Filme.Filme', array(
+    'type' => 'select',
+    'label' => array('text' => 'Selecione os Filmes'),
+    'multiple' => true,
+    'options' => $filmes
+));
+
+$this->assign('formFields', $formFields);
+
