@@ -11,102 +11,55 @@ namespace App\Controller;
  */
 class FilmesController extends AppController
 {
-    /**
-     * Index method
-     *
-     * @return \Cake\Http\Response|null|void Renders view
-     */
-    public function index()
-    {
-        $this->paginate = [
-            'contain' => ['Generos'],
-        ];
-        $filmes = $this->paginate($this->Filmes);
+    public $paginate = array(
+        'fields' => array('id', 'nome', 'ano', 'Genero.nome'),
+        'conditions' => array('deleted IS NULL'),
+        'limit' => 10,
+        'order' => array('nome' => 'asc')    
+    );
 
-        $this->set(compact('filmes'));
-    }
-
-    /**
-     * View method
-     *
-     * @param string|null $id Filme id.
-     * @return \Cake\Http\Response|null|void Renders view
-     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
-     */
-    public function view($id = null)
-    {
-        $filme = $this->Filmes->get($id, [
-            'contain' => ['Generos', 'Ators', 'Criticas'],
-        ]);
-
-        $this->set(compact('filme'));
-    }
-
-    /**
-     * Add method
-     *
-     * @return \Cake\Http\Response|null|void Redirects on successful add, renders view otherwise.
-     */
-    public function add()
-    {
-        $filme = $this->Filmes->newEmptyEntity();
+    public function setPaginateConditions() {
+        $nomeOrIdioma = '';
         if ($this->request->is('post')) {
-            $filme = $this->Filmes->patchEntity($filme, $this->request->getData());
-            if ($this->Filmes->save($filme)) {
-                $this->Flash->success(__('The filme has been saved.'));
-
-                return $this->redirect(['action' => 'index']);
-            }
-            $this->Flash->error(__('The filme could not be saved. Please, try again.'));
-        }
-        $generos = $this->Filmes->Generos->find('list', ['limit' => 200]);
-        $ators = $this->Filmes->Ators->find('list', ['limit' => 200]);
-        $this->set(compact('filme', 'generos', 'ators'));
-    }
-
-    /**
-     * Edit method
-     *
-     * @param string|null $id Filme id.
-     * @return \Cake\Http\Response|null|void Redirects on successful edit, renders view otherwise.
-     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
-     */
-    public function edit($id = null)
-    {
-        $filme = $this->Filmes->get($id, [
-            'contain' => ['Ators'],
-        ]);
-        if ($this->request->is(['patch', 'post', 'put'])) {
-            $filme = $this->Filmes->patchEntity($filme, $this->request->getData());
-            if ($this->Filmes->save($filme)) {
-                $this->Flash->success(__('The filme has been saved.'));
-
-                return $this->redirect(['action' => 'index']);
-            }
-            $this->Flash->error(__('The filme could not be saved. Please, try again.'));
-        }
-        $generos = $this->Filmes->Generos->find('list', ['limit' => 200]);
-        $ators = $this->Filmes->Ators->find('list', ['limit' => 200]);
-        $this->set(compact('filme', 'generos', 'ators'));
-    }
-
-    /**
-     * Delete method
-     *
-     * @param string|null $id Filme id.
-     * @return \Cake\Http\Response|null|void Redirects to index.
-     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
-     */
-    public function delete($id = null)
-    {
-        $this->request->allowMethod(['post', 'delete']);
-        $filme = $this->Filmes->get($id);
-        if ($this->Filmes->delete($filme)) {
-            $this->Flash->success(__('The filme has been deleted.'));
+            $nomeOrIdioma = $this->request->data['Filme']['nome_or_idioma'];
+            $this->Session->write('nome_or_idioma', $nomeOrIdioma);
         } else {
-            $this->Flash->error(__('The filme could not be deleted. Please, try again.'));
+            $nomeOrIdioma = $this->Session->read('nome_or_idioma');
+            $this->request->data('nome_or_idioma', $nomeOrIdioma);
         }
-
-        return $this->redirect(['action' => 'index']);
+        if (!empty($nomeOrIdioma)) {
+            $this->paginate['conditions']['or'] = array(
+                'nome LIKE' => '%' .trim($nomeOrIdioma) . '%',
+                'idioma LIKE' => '%' . trim($nomeOrIdioma) . '%'
+            );
+        }
     }
+
+    public function add() {
+        parent::add();
+        $this->setGeneroAndAtors();
+    }
+
+    public function getEditData($id) {
+        $this->setGeneroAndAtors();
+        $fields = array('id', 'nome', 'duracao', 'idioma', 'ano', 'genero_id');
+        $conditions = array('id' => $id);
+     
+        return $this->Filme->find('first', compact('fields', 'conditions'));
+    }
+
+    public function view($id = null) {
+        parent::view($id);
+        $this->setGeneroAndAtors();
+    }
+
+    public function setGeneroAndAtors() {
+        $fields = array('Genero.id', 'Genero.nome');
+        $generos = $this->Filme->Genero->find('list', compact('fields'));
+        $fields = array('Ator.id', 'Ator.nome');
+        $ators = $this->Filme->Ator->find('list', compact('fields'));
+        $this->set('generos', $generos);        
+        $this->set('ators', $ators);        
+    }
+
 }
